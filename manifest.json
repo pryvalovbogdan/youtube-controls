@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Socket Extension",
+  "version": "1.0",
+  "permissions": ["scripting", "storage", "tabs", "webNavigation"],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["contentScript.js"]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "host_permissions": ["ws://localhost:3000/", "<all_urls>"]
+}
