@@ -12,30 +12,42 @@ chrome.runtime.onInstalled.addListener(() => {
 
     socket.addEventListener('message', (event) => {
         console.log('Message from server:', event.data);
-        console.log('event.data.type', event.data.type, JSON.parse(event.data))
+
         const parsedData = JSON.parse(event.data);
-        if(parsedData.type === 'stop'){
-            console.log('Message from server stop send', parsedData.payload);
-            // chrome.runtime.sendMessage({ type: "STOP_PLAYING", data: parsedData.payload });
+        console.log('Parsed message:', parsedData);
 
-            chrome.tabs.query({}, function(tabs) {
-                const targetTab = tabs.find(tab => tab.url?.includes("youtube.com/watch"));
-                if (targetTab?.id) {
-                    chrome.tabs.sendMessage(targetTab.id, {
-                        type: "STOP_PLAYING",
-                        data: parsedData.payload
-                    });
-                } else {
-                    console.warn("Target tab not found");
+        if (parsedData.type === 'stop') {
+            console.log('Stop command received from server:', parsedData.payload);
+
+            chrome.tabs.query({}, function (tabs) {
+                const targetTabs = tabs.filter(tab => tab.url?.includes("youtube.com"));
+                console.log('Found YouTube tabs:', targetTabs);
+
+                if (targetTabs.length === 0) {
+                    console.warn("No YouTube tabs found");
+                    return;
                 }
-            });
 
-            chrome.runtime.sendMessage({ type: "STOP_PLAYING", data: parsedData.payload });
+                targetTabs.forEach(tab => {
+                    if (tab.id) {
+                        chrome.tabs.sendMessage(tab.id, {
+                            type: "STOP_PLAYING",
+                            data: parsedData.payload
+                        }, (response) => {
+                            console.log(`Response from tab ${tab.id}:`, response);
+                            if (chrome.runtime.lastError) {
+                                console.warn(`Error sending message to tab ${tab.id}:`, chrome.runtime.lastError.message);
+                            }
+                        });
+                    }
+                });
+            });
         }
+
     });
 
     socket.addEventListener('close', () => {
-        console.log('WebSocket closed');
+        console.log('WebSocket connection closed');
     });
 
     socket.addEventListener('error', (err) => {
@@ -43,7 +55,6 @@ chrome.runtime.onInstalled.addListener(() => {
     });
 });
 
-// Optional: expose send API
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === 'sendMessage') {
         socket?.send(JSON.stringify(msg.payload));
