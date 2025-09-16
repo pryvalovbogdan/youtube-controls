@@ -19,4 +19,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
         sendResponse({ status: "paused" });
     }
+
+    if (request.type === "GET_SONG") {
+        const player = document.querySelector('.html5-video-player');
+
+        if(player.classList.contains('playing-mode')){
+            const title = document.querySelector('title');
+
+            sendResponse(title.innerText);
+        }
+    }
 });
